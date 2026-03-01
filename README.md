@@ -10,7 +10,7 @@ This repository contains **only the backend**. The frontend (Next.js app) lives 
 
 | Repository | Description |
 |------------|-------------|
-| **[QuickHire](https://github.com/your-username/QuickHire)** | Frontend (Next.js) – job listings, search, apply form, and admin add/delete. |
+| **[QuickHire](https://github.com/hasibulmahi/QuickHire)** | Frontend (Next.js) – job listings, search, apply form, and admin add/delete. |
 
 ---
 
