@@ -1,173 +1,154 @@
-# QuickHire – Server (Backend)
+# QuickHire-Backend (Server)
 
-Backend for **QuickHire**, the job board application. This server exposes a RESTful API for jobs and applications. The client (Next.js app in `/client`) will consume these endpoints instead of using localStorage.
+Backend API for **QuickHire**, the job board application. This server provides a RESTful API for **jobs** and **applications** and stores data in **MongoDB**.
+
+This repository contains **only the backend**. The frontend (Next.js app) lives in a separate repository.
+
+---
+
+## Related repository
+
+| Repository | Description |
+|------------|-------------|
+| **[QuickHire](https://github.com/your-username/QuickHire)** | Frontend (Next.js) – job listings, search, apply form, and admin add/delete. |
+
+---
+
+## What this project does
+
+- **Jobs API** – List all jobs, get one job, create job (admin), delete job (admin).
+- **Applications API** – Submit a job application (name, email, resume link, cover note).
+- **Database** – MongoDB stores jobs and applications; admin routes are protected by an API key.
+
+The frontend calls these endpoints to show jobs, handle apply forms, and let admins add/delete jobs.
 
 ---
 
 ## Tech stack
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB
-- **Language:** TypeScript (recommended)
+| Area | Stack |
+|------|--------|
+| **Runtime** | Node.js |
+| **Framework** | Express.js |
+| **Language** | TypeScript |
+| **Database** | MongoDB (Mongoose) |
+
+---
+
+## Prerequisites
+
+- **Node.js** v18+
+- **MongoDB** (local instance or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **npm** (or yarn/pnpm)
+
+---
+
+## Getting started
+
+### 1. Clone this repository
+
+```bash
+git clone https://github.com/your-username/QuickHire-backend.git
+cd QuickHire-backend
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment variables
+
+Create `.env` from the example and set at least `MONGODB_URI`:
+
+```bash
+cp .env.example .env
+```
+
+Edit ` .env`:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONGODB_URI` | Yes | MongoDB connection string (e.g. `mongodb://localhost:27017/quickhire` or Atlas SRV) |
+| `PORT` | No | Server port (default: `3001`) |
+| `CLIENT_ORIGIN` | No | CORS allowed origin (default: `http://localhost:3000`) |
+| `ADMIN_API_KEY` | No | Secret for admin routes (default: `quickhire-admin-key`) |
+
+### 4. Run the server
+
+**Development:**
+
+```bash
+npm run dev
+```
+
+You should see `MongoDB connected` and `Server running at http://localhost:3001`.
+
+**Production:**
+
+```bash
+npm run build
+npm start
+```
+
+### 5. Quick checks
+
+- **Health:** [http://localhost:3001/health](http://localhost:3001/health) → `{"ok":true}`
+- **Jobs:** [http://localhost:3001/api/jobs](http://localhost:3001/api/jobs) → `[]` or list of jobs
+
+To use the app in the browser, run the [QuickHire](https://github.com/your-username/QuickHire) frontend and set its `NEXT_PUBLIC_API_URL` to `http://localhost:3001` (and match `ADMIN_API_KEY` in the client’s `NEXT_PUBLIC_ADMIN_API_KEY`).
 
 ---
 
 ## Server layout
 
-Project structure at a glance:
-
 ```
 server/
-├── .env.example          # Example env vars (MONGODB_URI, PORT, ADMIN_API_KEY, CLIENT_ORIGIN)
-├── .gitignore            # Ignores node_modules, dist, .env
-├── README.md             # This file
-├── package.json          # Scripts: dev, build, start
-├── tsconfig.json         # TypeScript config (outDir: dist)
+├── .env.example       # Example env (MONGODB_URI, PORT, CLIENT_ORIGIN, ADMIN_API_KEY)
+├── package.json       # Scripts: dev, build, start
+├── tsconfig.json      # TypeScript (outDir: dist)
 └── src/
-    ├── index.ts          # Express app entry, CORS, route mounting, health check
-    ├── config/
-    │   └── db.ts         # MongoDB connection (connectDB)
+    ├── index.ts       # Express app, CORS, routes, health check
+    ├── config/db.ts   # MongoDB connection
     ├── models/
-    │   ├── Job.ts        # Job schema (title, company, location, category, description, jobType, tags, logo)
-    │   └── Application.ts # Application schema (job_id, name, email, resume_link, cover_note)
-    ├── middleware/
-    │   └── auth.ts       # requireAdmin – checks X-Admin-Key or Authorization: Bearer
+    │   ├── Job.ts     # Job schema (title, company, location, category, etc.)
+    │   └── Application.ts  # Application schema (job_id, name, email, resume_link, cover_note)
+    ├── middleware/auth.ts  # requireAdmin (X-Admin-Key or Authorization: Bearer)
     └── routes/
-        ├── jobs.ts       # GET /api/jobs, GET /api/jobs/:id, POST /api/jobs, DELETE /api/jobs/:id
-        └── applications.ts # POST /api/applications
+        ├── jobs.ts          # GET/POST/DELETE /api/jobs
+        └── applications.ts  # POST /api/applications
 ```
 
-| Path | Purpose |
-|------|--------|
-| `src/index.ts` | Starts server, enables CORS and JSON body, mounts `/api/jobs` and `/api/applications`, serves `/health`. |
-| `src/config/db.ts` | Connects to MongoDB using `MONGODB_URI`. |
-| `src/models/Job.ts` | Mongoose Job model; API responses include `id`, `companyName`, `created_at`. |
-| `src/models/Application.ts` | Mongoose Application model; references Job via `job_id`. |
-| `src/middleware/auth.ts` | Protects POST/DELETE job routes with admin API key. |
-| `src/routes/jobs.ts` | List, get one, create (admin), delete (admin). |
-| `src/routes/applications.ts` | Submit application; accepts `jobId`/`job_id`, `resumeUrl`/`resume_link`, `coverNote`/`cover_note`. |
-
 ---
 
-## API requirements
-
-### Backend (Express.js)
-
-You must build a **RESTful API** with the following functionality.
-
-### Required endpoints (examples)
-
-#### Jobs
+## API endpoints
 
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
+| GET | `/health` | Health check | Public |
 | GET | `/api/jobs` | List all jobs | Public |
-| GET | `/api/jobs/:id` | Get single job details | Public |
-| POST | `/api/jobs` | Create a job | Admin |
-| DELETE | `/api/jobs/:id` | Delete a job | Admin |
+| GET | `/api/jobs/:id` | Get one job | Public |
+| POST | `/api/jobs` | Create job | Admin (`X-Admin-Key` or `Authorization: Bearer`) |
+| DELETE | `/api/jobs/:id` | Delete job | Admin (`X-Admin-Key` or `Authorization: Bearer`) |
+| POST | `/api/applications` | Submit application | Public |
 
-#### Applications
+**Admin routes:** Send the admin API key in header `X-Admin-Key: <key>` or `Authorization: Bearer <key>`.
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/applications` | Submit job application | Public |
-
----
-
-## Database (MongoDB)
-
-- Use **MongoDB** for persistence.
-- Persist **job listings** and **applications**.
-- Use proper **model relationships** (e.g. Job → Applications).
-
-### Example models
-
-#### Job
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier (e.g. from MongoDB `_id`) |
-| `title` | string | Job title |
-| `company` | string | Company name |
-| `location` | string | Job location |
-| `category` | string | Category (e.g. Design, Marketing, Technology) |
-| `description` | string | Job description |
-| `created_at` | Date | Creation timestamp |
-
-Additional fields (to align with client): `job_type`, `tags`, `company_logo` (URL or stored path), etc., as needed.
-
-#### Application
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier |
-| `job_id` | string | Reference to Job (`_id` or `id`) |
-| `name` | string | Applicant name |
-| `email` | string | Applicant email |
-| `resume_link` | string | URL to resume (or uploaded file path) |
-| `cover_note` | string | Cover letter / note |
-| `created_at` | Date | Submission timestamp |
-
-### Relationships
-
-- **Job → Applications:** One job can have many applications. Store `job_id` on each Application document to reference the Job.
-- Queries: e.g. “Get all applications for job X” by filtering applications where `job_id === job.id` (or equivalent).
+**Application body:** Supports `job_id` or `jobId`, `resume_link` or `resumeUrl`, `cover_note` or `coverNote`.
 
 ---
 
-## Alignment with client
+## Database models
 
-The client currently uses:
+**Job:** `title`, `company`, `location`, `category`, `description`, `jobType`, `tags`, `logo`, `created_at`.
 
-- **Jobs:** List (search/filter), detail page, apply form (name, email, resume URL, cover note).
-- **Admin:** Add job (company, job type, title, location, tags, description, company logo), delete job with confirmation.
-
-The server API should support these flows:
-
-1. **GET /api/jobs** – Used by jobs list and home (featured/latest).
-2. **GET /api/jobs/:id** – Used by job detail page.
-3. **POST /api/jobs** – Used by admin “Add job” form (Admin only).
-4. **DELETE /api/jobs/:id** – Used by admin “Delete” action (Admin only).
-5. **POST /api/applications** – Used by job detail “Apply” form (body: job_id, name, email, resume_link, cover_note).
+**Application:** `job_id`, `name`, `email`, `resume_link`, `cover_note`, `created_at`. Applications reference a job via `job_id`.
 
 ---
 
-## API usage
+## Learn more
 
-- **Admin routes** (POST `/api/jobs`, DELETE `/api/jobs/:id`): send the admin API key in one of:
-  - Header: `X-Admin-Key: <your-admin-key>`
-  - Header: `Authorization: Bearer <your-admin-key>`
-- **Application body** can use either `job_id` or `jobId`, `resume_link` or `resumeUrl`, `cover_note` or `coverNote` for client compatibility.
-
----
-
-## Getting started (after implementation)
-
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Environment**
-
-   - Set `MONGODB_URI` (and optionally `PORT`, `NODE_ENV`).
-
-3. **Run the server**
-
-   ```bash
-   npm run dev
-   ```
-
-   API base URL (example): `http://localhost:3001` (or your chosen port). Client should call e.g. `http://localhost:3001/api/jobs`.
-
----
-
-## Summary checklist
-
-- [ ] Express.js REST API with routes for `/api/jobs` and `/api/applications`
-- [ ] MongoDB with **Job** and **Application** models as above
-- [ ] Relationship: Application has `job_id` → Job
-- [ ] Admin protection for POST/DELETE jobs (e.g. API key or auth middleware)
-- [ ] CORS enabled for client origin (e.g. `http://localhost:3000`)
+- **Frontend and full app setup:** [QuickHire](https://github.com/your-username/QuickHire)
+- [Express.js](https://expressjs.com/)
+- [Mongoose](https://mongoosejs.com/)
