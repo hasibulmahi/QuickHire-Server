@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import mongoose from "mongoose";
-import { Job } from "../models/Job";
+import { Job, IJobOutput } from "../models/Job";
 import { requireAdmin } from "../middleware/auth";
 
 const router = Router();
@@ -8,21 +8,21 @@ const router = Router();
 // GET /api/jobs – List all jobs
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 }).lean();
+    const jobs = await Job.find().sort({ createdAt: -1 });
     const list = jobs.map((j) => {
-      const id = (j as { _id: mongoose.Types.ObjectId })._id.toString();
+      const jobJson = j.toJSON() as unknown as IJobOutput;
       return {
-        id,
-        title: j.title,
-        companyName: j.company,
-        company: j.company,
-        location: j.location,
-        category: j.category,
-        description: j.description ?? "",
-        jobType: j.jobType ?? "Full Time",
-        tags: j.tags ?? [],
-        logo: j.logo ?? "",
-        created_at: (j as { createdAt: Date }).createdAt,
+        id: jobJson.id,
+        title: jobJson.title,
+        companyName: jobJson.companyName,
+        company: jobJson.companyName,
+        location: jobJson.location,
+        category: jobJson.category,
+        description: jobJson.description ?? "",
+        jobType: jobJson.jobType ?? "Full Time",
+        tags: jobJson.tags ?? [],
+        logo: jobJson.logo ?? "",
+        created_at: jobJson.created_at,
       };
     });
     res.json(list);

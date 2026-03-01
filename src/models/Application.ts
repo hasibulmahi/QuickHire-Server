@@ -1,13 +1,21 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IApplication extends Document {
-  _id: mongoose.Types.ObjectId;
   job_id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   resume_link: string;
   cover_note: string;
-  createdAt: Date;
+}
+
+export interface IApplicationOutput {
+  id: string;
+  job_id: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  resume_link: string;
+  cover_note: string;
+  created_at: Date;
 }
 
 const ApplicationSchema = new Schema<IApplication>(
@@ -24,7 +32,7 @@ const ApplicationSchema = new Schema<IApplication>(
 ApplicationSchema.set("toJSON", {
   virtuals: false,
   versionKey: false,
-  transform(_doc, ret) {
+  transform(_doc, ret: any) {
     ret.id = ret._id.toString();
     ret.created_at = ret.createdAt;
     delete ret._id;

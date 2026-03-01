@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IJob extends Document {
-  _id: mongoose.Types.ObjectId;
   title: string;
   company: string;
   location: string;
@@ -10,7 +9,19 @@ export interface IJob extends Document {
   jobType: string;
   tags: string[];
   logo: string;
-  createdAt: Date;
+}
+
+export interface IJobOutput {
+  id: string;
+  title: string;
+  companyName: string;
+  location: string;
+  category: string;
+  description: string;
+  jobType: string;
+  tags: string[];
+  logo: string;
+  created_at: Date;
 }
 
 const JobSchema = new Schema<IJob>(
@@ -31,7 +42,7 @@ const JobSchema = new Schema<IJob>(
 JobSchema.set("toJSON", {
   virtuals: false,
   versionKey: false,
-  transform(_doc, ret) {
+  transform(_doc, ret: any) {
     ret.id = ret._id.toString();
     ret.companyName = ret.company;
     ret.created_at = ret.createdAt;
